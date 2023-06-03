@@ -4,6 +4,7 @@ const path = require("path");
 const { saveData, loadData } = require("./savePreferences");
 
 let mainWindow = null;
+let preferencesWindow = null;
 let processInterval;
 let blockedApps = [];
 
@@ -22,9 +23,6 @@ app.on("ready", async () => {
     mainWindow = null;
   });
   blockedApps = loadData();
-  //   mainWindow.webContents.on("dom-ready", () => {
-  //     mainWindow.webContents.send("dataLoaded", blockedApps);
-  //   });
 });
 
 function shutDownApps(appList, blockedApps) {
@@ -39,11 +37,18 @@ function shutDownApps(appList, blockedApps) {
   });
 }
 function openPreferencesWindow() {
-  const preferencesWindow = new BrowserWindow({
+  preferencesWindow = new BrowserWindow({
     width: 400,
     height: 300,
-    parent: mainWindow, // Set the parent window
-    modal: true, // Make the child window modal
+    parent: mainWindow,
+    modal: true,
+    frame: false,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#2f3241",
+      symbolColor: "#74b1be",
+      height: 5,
+    },
     webPreferences: {
       nodeIntegration: true, // Set nodeIntegration to true
       contextIsolation: false,
@@ -76,6 +81,8 @@ ipcMain.on("toggleFocusMode", (event, focusModeActive) => {
 ipcMain.on("saveData", (event, newData) => {
   saveData(newData);
   blockedApps = newData;
+  // send updated list back to front-end
+  preferencesWindow.webContents.send("dataLoaded", blockedApps);
 });
 
 ipcMain.on("openPreferences", (event) => {

@@ -3,53 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <title>Heimdall - Preferences</title>
+    <link rel="stylesheet" href="../styles/preferences.css" />
   </head>
   <body>
-    <input
-      name="appName"
-      type="text"
-      id="appName"
-      value=""
-      placeholder="EX: notepad.exe"
-    />
-    <button id="addBlockedApp">Add Blocked App</button>
-    <ul id="dataList"></ul>
-    <script>
-      let blockedAppList;
-      window.ipcRenderer.on("dataLoaded", (event, data) => {
-        renderList(data);
-        blockedAppList = data;
-      });
-
-      function renderList(data) {
-        console.log(data);
-        const dataList = document.getElementById("dataList");
-        dataList.innerHTML = "";
-
-        data.forEach((item) => {
-          const listItem = document.createElement("li");
-          listItem.textContent = item;
-          dataList.appendChild(listItem);
-        });
-      }
-
-      const addBlockedApp = document.getElementById("addBlockedApp");
-      addBlockedApp.addEventListener("click", () => {
-        const newAppInput = document.getElementById("appName");
-        let newAppValue = newAppInput.value;
-        if (newAppValue.trim() === "") {
-          return;
-        }
-        let newData = blockedAppList;
-        newData.push(newAppValue);
-        window.ipcRenderer.send("saveData", newData);
-        // update and refresh list UI
-        const dataList = document.getElementById("dataList");
-        const listItem = document.createElement("li");
-        listItem.textContent = newAppValue;
-        dataList.appendChild(listItem);
-        newAppInput.value = "";
-      });
-    </script>
+    <section>
+      <input
+        name="name"
+        type="text"
+        id="appNameInput"
+        value=""
+        placeholder="EX: notepad.exe"
+      />
+      <button onclick="addAppToBlockList()">Add Blocked App</button>
+      <ul id="dataList"></ul>
+    </section>
+    <script src="../scripts/preferences.js"></script>
   </body>
 </html>
