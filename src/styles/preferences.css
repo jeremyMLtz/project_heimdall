@@ -3,8 +3,7 @@ body {
   -webkit-app-region: drag;
   margin: 50px 0 0;
   padding: 0;
-  overflow: hidden;
-  border-radius: 10px;
+  text-align: center;
 }
 
 button,
