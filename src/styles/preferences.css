@@ -1,0 +1,12 @@
+body {
+  background: #2f3241;
+  -webkit-app-region: drag;
+  margin: 50px 0 0;
+  padding: 0;
+  text-align: center;
+}
+
+button,
+input {
+  -webkit-app-region: no-drag;
+}

@@ -5,57 +5,18 @@
     <title>Heimdall</title>
   </head>
   <body>
-    <button id="focusButton">Enter Focus Mode</button>
-    <button id="openPreferences">Preferences</button>
+    <button onclick="toggleFocusMode()" id="focusButton">
+      Enter Focus Mode
+    </button>
+    <button onclick="openPreferences()" id="openPreferences">
+      Preferences
+    </button>
     <input
       type="number"
       id="timerInput"
       placeholder="Timer duration in milliseconds"
     />
     <button id="startTimerButton">Start Timer</button>
-    <script>
-      const focusButton = document.getElementById("focusButton");
-      let focusModeActive = false;
-
-      focusButton.addEventListener("click", () => {
-        focusModeActive = !focusModeActive;
-        focusButton.innerText = focusModeActive
-          ? "Stop Focusing"
-          : "Enter Focus Mode";
-        window.ipcRenderer.send("toggleFocusMode", focusModeActive);
-      });
-
-      const preferencesButton = document.getElementById("openPreferences");
-      preferencesButton.addEventListener("click", () => {
-        window.ipcRenderer.send("openPreferences");
-      });
-      ipcRenderer.on("timerExpired", () => {
-        focusModeActive = false;
-        window.ipcRenderer.send("toggleFocusMode", focusModeActive);
-      });
-      function startTimer() {
-        const timerInput = document.getElementById("timerInput");
-        const duration = parseInt(timerInput.value, 10);
-
-        if (isNaN(duration) || duration <= 0) {
-          return;
-        }
-        focusModeActive = true;
-        window.ipcRenderer.send("startTimer", duration);
-        window.ipcRenderer.send("toggleFocusMode", focusModeActive);
-        timerInput.value = "";
-      }
-      document
-        .getElementById("startTimerButton")
-        .addEventListener("click", startTimer);
-
-      document
-        .getElementById("timerInput")
-        .addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            startTimer();
-          }
-        });
-    </script>
+    <script src="../scripts/home.js"></script>
   </body>
 </html>
