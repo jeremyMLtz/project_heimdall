@@ -7,15 +7,47 @@
   </head>
   <body>
     <section>
-      <button onclick="addAppToBlockList()">Add Blocked App</button>
-      <input
-        name="name"
-        type="text"
-        id="appNameInput"
-        value=""
-        placeholder="EX: notepad.exe"
-      />
-      <ul id="dataList"></ul>
+      <form class="add-app-container" onsubmit="addAppToBlockList()">
+        <button type="submit" class="add-app-button">
+          <svg
+            id="Layer_1"
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 31.47 31.47"
+          >
+            <rect
+              fill="#f8f1ff"
+              stroke="#f8f1ff"
+              x="15.41"
+              y=".5"
+              width=".93"
+              height="30.47"
+              rx=".47"
+              ry=".47"
+            />
+            <rect
+              fill="#f8f1ff"
+              stroke="#f8f1ff"
+              x="15.27"
+              y=".83"
+              width=".93"
+              height="30.47"
+              rx=".47"
+              ry=".47"
+              transform="translate(-.33 31.8) rotate(-90)"
+            />
+          </svg>
+        </button>
+        <input
+          name="name"
+          type="text"
+          id="appNameInput"
+          value=""
+          placeholder="EX: notepad.exe"
+        />
+      </form>
+      <span class="blockedApplications">Blocked Applications</span>
+      <ul id="appList"></ul>
     </section>
     <script src="../scripts/preferences.js"></script>
   </body>
