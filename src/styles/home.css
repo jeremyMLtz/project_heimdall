@@ -1,0 +1,47 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #2f3241;
+  -webkit-app-region: drag;
+  margin: 25px 0 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+svg {
+  height: 55px;
+}
+
+button {
+  background: transparent;
+  border: none;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+.actions-container {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  align-items: center;
+}
+
+#focusButton {
+  border: 1px solid;
+  padding: 5px 12px;
+  border-radius: 13px;
+  font-weight: 700;
+  transition: 0.3s ease-in-out all;
+}
+
+#focusButton:hover {
+  color: #74b1be;
+  border-color: #74b1be;
+}
+
+.active {
+  color: #74b1be;
+  border-color: #74b1be;
+}
+.inactive {
+  border-color: #f8f1ff80;
+  color: #f8f1ff80;
+}

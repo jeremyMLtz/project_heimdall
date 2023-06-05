@@ -12,20 +12,21 @@ const createBlockedAppListItem = (appName) => {
   appTitle.textContent = appName;
   appTitle.className = "title";
   removeAppButton.id = appName;
+  removeAppButton.className = "removeApp";
   removeAppButton.onclick = () => removeAppFromBlockList(removeAppButton.id);
-  removeAppButton.textContent = "X";
+  removeAppButton.textContent = "x";
   listItem.appendChild(appTitle);
   listItem.appendChild(removeAppButton);
   return listItem;
 };
 
 function renderList(data) {
-  const dataList = document.getElementById("dataList");
-  dataList.innerHTML = "";
+  const appList = document.getElementById("appList");
+  appList.innerHTML = "";
 
   data.forEach((item) => {
     const listItem = createBlockedAppListItem(item);
-    dataList.appendChild(listItem);
+    appList.appendChild(listItem);
   });
 }
 
@@ -39,16 +40,16 @@ const addAppToBlockList = () => {
   newData.push(newAppValue);
   window.ipcRenderer.send("saveData", newData);
   // update and refresh list UI
-  const dataList = document.getElementById("dataList");
+  const appList = document.getElementById("appList");
   const listItem = createBlockedAppListItem(newAppValue);
-  dataList.appendChild(listItem);
+  appList.appendChild(listItem);
   newAppInput.value = "";
 };
 
 const removeAppFromBlockList = (appName) => {
   const newData = blockedAppList.filter((app) => app !== appName);
   window.ipcRenderer.send("saveData", newData);
-  const dataList = document.getElementById("dataList");
+  const appList = document.getElementById("appList");
   const appItem = document.getElementById(`${appName}-item`);
-  dataList.removeChild(appItem);
+  appList.removeChild(appItem);
 };

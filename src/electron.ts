@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, screen, session } from "electron";
 import psList from "ps-list";
 const path = require("path");
 const { saveData, loadData } = require("./savePreferences");
@@ -9,9 +9,21 @@ let processInterval;
 let blockedApps = [];
 
 app.on("ready", async () => {
+  console.log(path.join(__dirname, "taskbar-icon.ico"));
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    icon: path.join(__dirname, "/assets/taskbar-icon.ico"),
+    width: 350,
+    height: 100,
+    x: width - 350,
+    y: height - 100,
+    frame: false,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#2f3241",
+      symbolColor: "#74b1be",
+      height: 5,
+    },
     webPreferences: {
       nodeIntegration: true, // Set nodeIntegration to true
       contextIsolation: false,
