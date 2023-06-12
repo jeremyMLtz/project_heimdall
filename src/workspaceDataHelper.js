@@ -1,13 +1,12 @@
 const fs = require("fs");
 
-const userPreferencesDirectory = "./userPreferences";
-const filePath = "userPreferences/userPreferences.json";
+const userPreferencesDirectory = "./workspaces";
+const filePath = "workspaces/workspaces.json";
 
 // Function to load data from the file
 function loadData() {
   try {
     const data = fs.readFileSync(filePath, "utf-8");
-    console.log(JSON.parse(data));
     return JSON.parse(data);
   } catch (error) {
     // If the file doesn't exist or there's an error, return an empty array

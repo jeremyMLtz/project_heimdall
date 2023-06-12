@@ -1,16 +1,24 @@
 {
   "name": "heimdall",
   "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "description": "Heimdall watches over your focus time and blocks applications from distracting you",
+  "main": "src/electron.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --config ./webpack.config.js",
-    "start": "npm run build && electron ./src/electron.js"
+    "start": "npm run build && electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "start:dev": "npm run build && electron ./src/electron.js"
   },
   "author": "Jeremy Lentz",
   "license": "ISC",
   "devDependencies": {
+    "@electron-forge/cli": "^6.1.1",
+    "@electron-forge/maker-deb": "^6.1.1",
+    "@electron-forge/maker-rpm": "^6.1.1",
+    "@electron-forge/maker-squirrel": "^6.1.1",
+    "@electron-forge/maker-zip": "^6.1.1",
     "electron": "^25.0.1",
     "ps-list": "^8.1.1",
     "ts-loader": "^9.4.3",
@@ -19,6 +27,7 @@
     "webpack-cli": "^5.1.1"
   },
   "dependencies": {
+    "electron-squirrel-startup": "^1.0.0",
     "ps-tree": "^1.2.0",
     "winreg": "^1.2.4"
   }

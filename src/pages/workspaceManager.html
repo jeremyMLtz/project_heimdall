@@ -2,12 +2,24 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Heimdall - Preferences</title>
-    <link rel="stylesheet" href="../styles/preferences.css" />
+    <title>Heimdall - Workspace Manager</title>
+    <link rel="stylesheet" href="../styles/workspaceManager.css" />
   </head>
   <body>
     <section>
-      <form class="add-app-container" onsubmit="addAppToBlockList()">
+      <div class="ws-manager-header">
+        <input
+          name="workspace"
+          type="text"
+          id="workspaceNameInput"
+          value=""
+          placeholder="Workspace Name *"
+        />
+        <button class="save-workspace" onclick="saveWorkspace()">
+          Save Workspace
+        </button>
+      </div>
+      <form class="add-app-container" onsubmit="addAppToBlockList(event)">
         <button type="submit" class="add-app-button">
           <svg
             id="Layer_1"
@@ -48,7 +60,19 @@
       </form>
       <span class="blockedApplications">Blocked Applications</span>
       <ul id="appList"></ul>
+      <div class="delete-cancel-container">
+        <div>
+          <button
+            onclick="deleteWorkspace()"
+            id="deleteWorkspace"
+            class="delete-workspace"
+          >
+            Delete Workspace
+          </button>
+        </div>
+        <button id="cancel" onClick="closeWorkspaceManager()">Cancel</button>
+      </div>
     </section>
-    <script src="../scripts/preferences.js"></script>
+    <script src="../scripts/workspaceManager.js"></script>
   </body>
 </html>
