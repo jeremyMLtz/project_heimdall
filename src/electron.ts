@@ -1,46 +1,80 @@
-import { app, BrowserWindow, ipcMain, screen, session } from "electron";
+import { app, BrowserWindow, ipcMain, Tray } from "electron";
 import psList from "ps-list";
 const path = require("path");
-const { saveData, loadData } = require("./savePreferences");
+const { saveData, loadData } = require("./workspaceDataHelper.js");
 
 let mainWindow = null;
-let preferencesWindow = null;
+let workspaceManager = null;
+let tray = null;
 let processInterval;
-let blockedApps = [];
+let workspaces = [];
+// The workspace selected for editing
+let selectedWorkspace;
+// The active workspace for Focus Time
+let activeWorkspace;
 
 app.on("ready", async () => {
-  console.log(path.join(__dirname, "taskbar-icon.ico"));
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  createTray();
+  loadWorkspaces();
+  createMainWindow();
+});
+function createMainWindow() {
   mainWindow = new BrowserWindow({
-    icon: path.join(__dirname, "/assets/taskbar-icon.ico"),
-    width: 350,
-    height: 100,
-    x: width - 350,
-    y: height - 100,
+    icon: path.join(__dirname, "./assets/taskbar-icon.png"),
+    width: 850,
+    height: 550,
     frame: false,
+    show: false,
     titleBarStyle: "hidden",
+    transparent: true,
+    resizable: false,
     titleBarOverlay: {
       color: "#2f3241",
       symbolColor: "#74b1be",
       height: 5,
     },
     webPreferences: {
-      nodeIntegration: true, // Set nodeIntegration to true
+      nodeIntegration: true,
       contextIsolation: false,
       preload: path.join(__dirname, "preload.js"),
     },
   });
-  mainWindow.loadFile("./pages/index.html");
+  mainWindow
+    .loadFile(path.join(__dirname, "./pages/index.html"))
+    .then(() => mainWindow.show());
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-  blockedApps = loadData();
-});
+  mainWindow.webContents.on("dom-ready", () => {
+    mainWindow.webContents.send("dataLoaded", workspaces);
+  });
+}
 
-function shutDownApps(appList, blockedApps) {
+function createTray() {
+  tray = new Tray(path.join(__dirname, "./assets/tray-icon.png"));
+
+  // Handle tray icon click event to show/hide the main window
+  tray.on("click", () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+    }
+  });
+}
+
+function loadWorkspaces() {
+  workspaces = loadData();
+  if (workspaces.length === 0) {
+    return;
+  }
+  activeWorkspace = workspaces.find((workspace) => workspace.active === true);
+}
+
+function shutDownApps(appList) {
   let appsToClose = [];
   appList.forEach((app) => {
-    if (blockedApps.includes(app.name)) {
+    if (activeWorkspace.blockedApps.includes(app.name)) {
       appsToClose.push(app);
     }
   });
@@ -48,13 +82,14 @@ function shutDownApps(appList, blockedApps) {
     process.kill(app.pid, "SIGTERM");
   });
 }
-function openPreferencesWindow() {
-  preferencesWindow = new BrowserWindow({
+function openWorkspaceManager() {
+  workspaceManager = new BrowserWindow({
     width: 400,
-    height: 300,
+    height: 600,
     parent: mainWindow,
     modal: true,
     frame: false,
+    show: false,
     titleBarStyle: "hidden",
     titleBarOverlay: {
       color: "#2f3241",
@@ -68,10 +103,14 @@ function openPreferencesWindow() {
     },
   });
 
-  preferencesWindow.loadFile("./pages/preferences.html");
-  preferencesWindow.webContents.on("dom-ready", () => {
-    preferencesWindow.webContents.send("dataLoaded", blockedApps);
-  });
+  workspaceManager
+    .loadFile(path.join(__dirname, "./pages/workspaceManager.html"))
+    .then(() => workspaceManager.show());
+  if (selectedWorkspace) {
+    workspaceManager.webContents.on("dom-ready", () => {
+      workspaceManager.webContents.send("workspaceLoaded", selectedWorkspace);
+    });
+  }
 }
 
 ipcMain.on("toggleFocusMode", (event, focusModeActive) => {
@@ -82,7 +121,7 @@ ipcMain.on("toggleFocusMode", (event, focusModeActive) => {
       let processes = [];
       processInterval = setInterval(async () => {
         processes = await psList();
-        shutDownApps(processes, blockedApps);
+        shutDownApps(processes);
       }, 2000);
     } catch (error) {
       console.error("Error retrieving process list:", error);
@@ -90,47 +129,72 @@ ipcMain.on("toggleFocusMode", (event, focusModeActive) => {
   }
 });
 
-ipcMain.on("saveData", (event, newData) => {
-  saveData(newData);
-  blockedApps = newData;
-  // send updated list back to front-end
-  preferencesWindow.webContents.send("dataLoaded", blockedApps);
+ipcMain.on("openWorkspaceManager", (event, workSpaceToEdit) => {
+  if (workSpaceToEdit) {
+    selectedWorkspace = workSpaceToEdit;
+  } else {
+    selectedWorkspace = null;
+  }
+  openWorkspaceManager();
 });
 
-ipcMain.on("openPreferences", (event) => {
-  openPreferencesWindow();
+ipcMain.on("saveWorkspace", (event, payload) => {
+  payload.active = false;
+  const updatedWorkspaces = workspaces;
+  // If we're editing an existing workspace, find and update it, else create new workspace
+  if (selectedWorkspace) {
+    updatedWorkspaces.forEach((workspace, index) => {
+      if (selectedWorkspace.name === workspace.name) {
+        updatedWorkspaces[index].name = payload.name;
+        updatedWorkspaces[index].blockedApps = payload.blockedApps;
+      }
+    });
+    selectedWorkspace = null;
+  } else {
+    updatedWorkspaces.push(payload);
+  }
+  saveData(updatedWorkspaces);
+  // close workspace manager and send new data to main App
+  mainWindow.webContents.send("dataLoaded", updatedWorkspaces);
+  workspaceManager.close();
+  workspaceManager = null;
+  loadWorkspaces();
 });
 
-ipcMain.on("startTimer", (event, duration) => {
-  setTimeout(() => {
-    event.reply("timerExpired");
-  }, duration);
+ipcMain.on("setActiveWorkspace", (event, workspace) => {
+  activeWorkspace = workspace;
+  let updatedWorkspaces = workspaces;
+  const workspaceToDeactivate = workspaces.find((ws) => ws.active === true);
+  updatedWorkspaces.forEach((ws, index) => {
+    // Deactivate old workspace
+    if (workspaceToDeactivate?.name === ws.name) {
+      updatedWorkspaces[index].active = false;
+    }
+    // Activate new workspace
+    if (workspace.name === ws.name) {
+      updatedWorkspaces[index].active = true;
+    }
+  });
+  saveData(updatedWorkspaces);
+  mainWindow.webContents.send("dataLoaded", updatedWorkspaces);
+  loadWorkspaces();
 });
 
-// TODO: Add functionality to provide a list of installed apps where a user can select what to block
-// function getInstalledApps() {
-//   exec(
-//     "reg query HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall /s",
-//     (error, stdout) => {
-//       if (error) {
-//         console.error(`Error: ${error.message}`);
-//         return;
-//       }
+ipcMain.on("deleteWorkspace", (event) => {
+  let updatedWorkspaces = workspaces;
+  updatedWorkspaces = updatedWorkspaces.filter(
+    (ws) => ws.name !== selectedWorkspace.name
+  );
+  saveData(updatedWorkspaces);
+  mainWindow.webContents.send("dataLoaded", updatedWorkspaces);
+  workspaceManager.close();
+  workspaceManager = null;
+  selectedWorkspace = null;
+  loadWorkspaces();
+});
 
-//       // Extract the display names and executable file names of installed applications
-//       const regex =
-//         /DisplayName\s+REG_SZ\s+([^\r\n]+)[\s\S]+?DisplayIcon\s+REG_SZ\s+([^\r\n]+)/g;
-//       let match;
-//       const installedApps = [];
-//       while ((match = regex.exec(stdout))) {
-//         const displayName = match[1];
-//         const displayIcon = match[2];
-//         const fileName = displayIcon.split(",").shift();
-//         installedApps.push({ displayName, fileName });
-//       }
-
-//       // Print the list of installed applications to the console
-//       console.log(installedApps);
-//     }
-//   );
-// }
+ipcMain.on("closeWorkspaceManager", (event) => {
+  workspaceManager.close();
+  workspaceManager = null;
+  selectedWorkspace = null;
+});
