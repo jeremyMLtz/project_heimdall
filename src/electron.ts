@@ -244,6 +244,7 @@ ipcMain.on("setActiveWorkspace", (event, workspace) => {
   saveData(updatedWorkspaces);
   mainWindow.webContents.send("dataLoaded", updatedWorkspaces);
   loadWorkspaces();
+  contextMenu.webContents.send("workspaceLoaded", activeWorkspace);
 });
 
 ipcMain.on("deleteWorkspace", (event) => {
