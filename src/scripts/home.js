@@ -3,6 +3,12 @@ const focusButton = document.getElementById("focusButton");
 const createWorkspaceButton = document.getElementById("createWorkspace");
 const wsContainer = document.getElementById("workspaces");
 const emptyState = document.getElementById("emptyState");
+const hourInput = document.getElementById("hour-input");
+const minuteInput = document.getElementById("minute-input");
+const secondInput = document.getElementById("second-input");
+
+let timer;
+let totalSeconds;
 
 window.ipcRenderer.on("dataLoaded", (event, data) => {
   const activeWorkspace = data.find((ws) => ws.active === true);
@@ -25,6 +31,22 @@ window.ipcRenderer.on("dataLoaded", (event, data) => {
       const workSpaceCard = createWorkspaceCard(workspace);
       wsContainer.appendChild(workSpaceCard);
     });
+  }
+});
+
+window.ipcRenderer.on("timeRemaining", (event, duration) => {
+  console.log(duration);
+
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
+  const seconds = duration % 60;
+
+  hourInput.value = hours.toString().padStart(2, "0");
+  minuteInput.value = minutes.toString().padStart(2, "0");
+  secondInput.value = seconds.toString().padStart(2, "0");
+  if (duration <= 0) {
+    focusModeActive = false;
+    updateFocusButton();
   }
 });
 
@@ -87,12 +109,22 @@ const createBlockedAppsPreview = (blockList) => {
 };
 
 const toggleFocusMode = () => {
+  // Get the user input
+  const hours = parseInt(hourInput.value) || 0;
+  const minutes = parseInt(minuteInput.value) || 0;
+  const seconds = parseInt(secondInput.value) || 0;
+
+  // Calculate the total seconds
+  totalSeconds = hours * 3600 + minutes * 60 + seconds;
   focusModeActive = !focusModeActive;
+  updateFocusButton();
+  window.ipcRenderer.send("toggleFocusMode", focusModeActive, totalSeconds);
+};
+const updateFocusButton = () => {
   focusButton.innerText = focusModeActive
     ? "Stop Focusing"
     : "Enter Focus Mode";
   focusButton.className = focusModeActive ? "active" : "inactive";
-  window.ipcRenderer.send("toggleFocusMode", focusModeActive);
 };
 
 const editWorkspace = (workspace) => {
