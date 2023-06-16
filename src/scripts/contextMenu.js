@@ -38,6 +38,9 @@ const toggleFocusMode = () => {
   window.ipcRenderer.send("toggleFocusMode", focusModeActive, totalSeconds);
 };
 const updateFocusButton = () => {
+  focusButton.innerText = focusModeActive
+    ? "Stop Focusing"
+    : "Enter Focus Mode";
   focusButton.className = focusModeActive ? "active" : "inactive";
 };
 
