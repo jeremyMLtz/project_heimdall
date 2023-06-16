@@ -34,9 +34,12 @@ window.ipcRenderer.on("dataLoaded", (event, data) => {
   }
 });
 
-window.ipcRenderer.on("timeRemaining", (event, duration) => {
-  console.log(duration);
+window.ipcRenderer.on("focusState", (event, focusState) => {
+  focusModeActive = focusState;
+  updateFocusButton();
+});
 
+window.ipcRenderer.on("timeRemaining", (event, duration) => {
   const hours = Math.floor(duration / 3600);
   const minutes = Math.floor((duration % 3600) / 60);
   const seconds = duration % 60;
@@ -44,10 +47,6 @@ window.ipcRenderer.on("timeRemaining", (event, duration) => {
   hourInput.value = hours.toString().padStart(2, "0");
   minuteInput.value = minutes.toString().padStart(2, "0");
   secondInput.value = seconds.toString().padStart(2, "0");
-  if (duration <= 0) {
-    focusModeActive = false;
-    updateFocusButton();
-  }
 });
 
 const createWorkspaceCard = (workspace) => {
