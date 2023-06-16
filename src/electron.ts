@@ -12,6 +12,9 @@ let workspaces = [];
 let selectedWorkspace;
 // The active workspace for Focus Time
 let activeWorkspace;
+let focusMode;
+let duration;
+let timer;
 
 app.on("ready", async () => {
   createTray();
@@ -47,6 +50,7 @@ function createMainWindow() {
   });
   mainWindow.webContents.on("dom-ready", () => {
     mainWindow.webContents.send("dataLoaded", workspaces);
+    mainWindow.webContents.send("timeRemaining", duration);
   });
 }
 
@@ -70,7 +74,18 @@ function loadWorkspaces() {
   }
   activeWorkspace = workspaces.find((workspace) => workspace.active === true);
 }
-
+function updateTimer() {
+  if (focusMode) {
+    if (duration <= 0) {
+      clearInterval(timer);
+      clearInterval(processInterval);
+      focusMode = false;
+    } else {
+      duration--;
+    }
+    mainWindow.webContents.send("timeRemaining", duration);
+  }
+}
 function shutDownApps(appList) {
   let appsToClose = [];
   appList.forEach((app) => {
@@ -113,16 +128,25 @@ function openWorkspaceManager() {
   }
 }
 
-ipcMain.on("toggleFocusMode", (event, focusModeActive) => {
-  if (!focusModeActive) {
+ipcMain.on("toggleFocusMode", (event, focusModeActive, totalSeconds) => {
+  duration = totalSeconds;
+  focusMode = focusModeActive;
+  if (!focusMode) {
+    if (timer) {
+      clearInterval(timer);
+    }
     clearInterval(processInterval);
   } else {
     try {
+      if (duration > 0) {
+        timer = setInterval(updateTimer, 1000);
+      }
       let processes = [];
       processInterval = setInterval(async () => {
         processes = await psList();
         shutDownApps(processes);
       }, 2000);
+      mainWindow.hide();
     } catch (error) {
       console.error("Error retrieving process list:", error);
     }
