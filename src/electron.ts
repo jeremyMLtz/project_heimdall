@@ -6,13 +6,14 @@ const { saveData, loadData } = require("./workspaceDataHelper.js");
 let mainWindow = null;
 let workspaceManager = null;
 let tray = null;
+let contextMenu = null;
 let processInterval;
 let workspaces = [];
 // The workspace selected for editing
 let selectedWorkspace;
 // The active workspace for Focus Time
 let activeWorkspace;
-let focusMode;
+let focusMode = false;
 let duration;
 let timer;
 
@@ -20,6 +21,7 @@ app.on("ready", async () => {
   createTray();
   loadWorkspaces();
   createMainWindow();
+  createContextMenu();
 });
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -28,14 +30,8 @@ function createMainWindow() {
     height: 550,
     frame: false,
     show: false,
-    titleBarStyle: "hidden",
     transparent: true,
     resizable: false,
-    titleBarOverlay: {
-      color: "#2f3241",
-      symbolColor: "#74b1be",
-      height: 5,
-    },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -45,12 +41,10 @@ function createMainWindow() {
   mainWindow
     .loadFile(path.join(__dirname, "./pages/index.html"))
     .then(() => mainWindow.show());
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
   mainWindow.webContents.on("dom-ready", () => {
     mainWindow.webContents.send("dataLoaded", workspaces);
     mainWindow.webContents.send("timeRemaining", duration);
+    mainWindow.webContents.send("focusState", focusMode);
   });
 }
 
@@ -59,46 +53,26 @@ function createTray() {
 
   // Handle tray icon click event to show/hide the main window
   tray.on("click", () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
+    if (!mainWindow) {
+      createMainWindow();
     } else {
-      mainWindow.show();
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+      }
     }
   });
-}
-
-function loadWorkspaces() {
-  workspaces = loadData();
-  if (workspaces.length === 0) {
-    return;
-  }
-  activeWorkspace = workspaces.find((workspace) => workspace.active === true);
-}
-function updateTimer() {
-  if (focusMode) {
-    if (duration <= 0) {
-      clearInterval(timer);
-      clearInterval(processInterval);
-      focusMode = false;
-    } else {
-      duration--;
-    }
-    mainWindow.webContents.send("timeRemaining", duration);
-  }
-}
-function shutDownApps(appList) {
-  let appsToClose = [];
-  appList.forEach((app) => {
-    if (activeWorkspace.blockedApps.includes(app.name)) {
-      appsToClose.push(app);
-    }
-  });
-  appsToClose.forEach((app) => {
-    process.kill(app.pid, "SIGTERM");
+  // Handle tray icon right-click event to show the custom context window
+  tray.on("right-click", () => {
+    const trayBounds = tray.getBounds();
+    contextMenu.setPosition(trayBounds.x - 300, trayBounds.y - 400);
+    contextMenu.show();
   });
 }
 function openWorkspaceManager() {
   workspaceManager = new BrowserWindow({
+    icon: path.join(__dirname, "./assets/taskbar-icon.png"),
     width: 400,
     height: 600,
     parent: mainWindow,
@@ -127,6 +101,73 @@ function openWorkspaceManager() {
     });
   }
 }
+function createContextMenu() {
+  contextMenu = new BrowserWindow({
+    icon: path.join(__dirname, "./assets/taskbar-icon.png"),
+    width: 300,
+    height: 450,
+    frame: false,
+    show: false,
+    alwaysOnTop: true,
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: true, // Set nodeIntegration to true
+      contextIsolation: false,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+  contextMenu.loadFile(path.join(__dirname, "./pages/contextMenu.html"));
+  contextMenu.webContents.on("dom-ready", () => {
+    contextMenu.webContents.send("timeRemaining", duration);
+    contextMenu.webContents.send("workspaceLoaded", activeWorkspace);
+    contextMenu.webContents.send("focusState", focusMode);
+  });
+  contextMenu.on("blur", () => {
+    contextMenu.hide();
+  });
+}
+
+function loadWorkspaces() {
+  workspaces = loadData();
+  if (workspaces.length === 0) {
+    return;
+  }
+  activeWorkspace = workspaces.find((workspace) => workspace.active === true);
+}
+function updateTimer() {
+  if (focusMode) {
+    if (duration <= 0) {
+      clearInterval(timer);
+      clearInterval(processInterval);
+      focusMode = false;
+      sendFocusState();
+    } else {
+      duration--;
+    }
+    mainWindow.webContents.send("timeRemaining", duration);
+    contextMenu.webContents.send("timeRemaining", duration);
+  }
+}
+function shutDownApps(appList) {
+  let appsToClose = [];
+  appList.forEach((app) => {
+    if (activeWorkspace.blockedApps.includes(app.name)) {
+      appsToClose.push(app);
+    }
+  });
+  appsToClose.forEach((app) => {
+    process.kill(app.pid, "SIGTERM");
+  });
+}
+
+function sendFocusState() {
+  if (mainWindow) {
+    mainWindow.webContents.send("focusState", focusMode);
+  }
+  if (contextMenu) {
+    contextMenu.webContents.send("focusState", focusMode);
+  }
+}
 
 ipcMain.on("toggleFocusMode", (event, focusModeActive, totalSeconds) => {
   duration = totalSeconds;
@@ -151,6 +192,7 @@ ipcMain.on("toggleFocusMode", (event, focusModeActive, totalSeconds) => {
       console.error("Error retrieving process list:", error);
     }
   }
+  sendFocusState();
 });
 
 ipcMain.on("openWorkspaceManager", (event, workSpaceToEdit) => {
@@ -221,4 +263,8 @@ ipcMain.on("closeWorkspaceManager", (event) => {
   workspaceManager.close();
   workspaceManager = null;
   selectedWorkspace = null;
+});
+
+ipcMain.on("closeApp", (event) => {
+  app.quit();
 });

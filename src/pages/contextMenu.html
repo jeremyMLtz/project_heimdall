@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Heimdall - Workspace Manager</title>
+    <link rel="stylesheet" href="../styles/contextMenu.css" />
+  </head>
+  <body>
+    <section>
+      <p id="workspaceName"></p>
+      <hr />
+      <div class="timer-container">
+        <input type="number" id="hour-input" placeholder="00" />
+        <span>:</span>
+        <input type="number" id="minute-input" placeholder="00" max="59" />
+        <span>:</span>
+        <input type="number" id="second-input" placeholder="00" max="59" />
+      </div>
+      <div class="focus-button-container">
+        <button onclick="toggleFocusMode()" id="focusButton">
+          Enter Focus Mode
+        </button>
+      </div>
+      <button class="quit-app" onClick="closeApp()">Quit App</button>
+    </section>
+    <script src="../scripts/contextMenu.js"></script>
+  </body>
+</html>
